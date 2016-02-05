@@ -7,19 +7,30 @@
 //
 
 #import "MADEchoServer.h"
+#import "MADTCPConnection.h"
 #import <CoreFoundation/CoreFoundation.h>
 #import <sys/socket.h>
 #import <netinet/in.h>
-#define DEFAULT_PORT 80
+#define DEFAULT_PORT 8080
 #define MAX_PORT 65535
+#define MIN_PORT 1023
 
 @interface MADEchoServer ()
 
-@property (retain, nonatomic, readonly) NSInputStream *inputStream;
-@property (retain, nonatomic, readonly) NSOutputStream *outputStream;
 @property (assign, nonatomic, readonly) CFSocketRef ipv4Socket;
+@property (retain, nonatomic) NSMutableSet *connections;
+
+- (void) acceptConnection:(CFSocketNativeHandle)handle;
 
 @end
+
+void AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
+    MADEchoServer *server = (__bridge MADEchoServer *)info;
+    // For an accept callback, data is a pointer to CFSocketNativeHandle
+    CFSocketNativeHandle handle = *(CFSocketNativeHandle *)data;
+    
+    [server acceptConnection:handle];
+}
 
 @implementation MADEchoServer
 
@@ -27,18 +38,7 @@
     self = [super init];
     
     if (self) {
-        CFReadStreamRef readStream;
-        CFWriteStreamRef writeStream;
-        
-        CFStreamCreatePairWithSocketToHost(NULL, (CFStringRef)@"localhost", (UInt32)DEFAULT_PORT, &readStream, &writeStream);
-        if(!CFWriteStreamOpen(writeStream)) {
-            @throw [[[MADNotOpetWriteStreamException alloc] initWithName:@"MADNotOpetWriteStreamException"
-                                                                  reason:@"WriteStream not open."
-                                                                userInfo:nil] autorelease];
-        }
-        _inputStream = [(NSInputStream *)read retain];
-        _outputStream = [(NSOutputStream *)write retain];
-        _ipv4Socket = 0;
+        _ipv4Socket = nil;
         _port = DEFAULT_PORT;
         _running = NO;
     }
@@ -50,109 +50,100 @@
     self = [super init];
     
     if (self) {
-        if (port > 65535 || port < 1) {
-            @throw [[[MADInvalidPortException alloc] initWithName:@"MADInvalidPortException"
-                                                           reason:@"65535 < port value > 1"
-                                                         userInfo:nil] autorelease];
+        if (port > MAX_PORT || port < MIN_PORT) {
+            @throw [[MADInvalidPortException alloc] initWithName:@"MADInvalidPortException"
+                                                           reason:@"65535 < port value > 1023"
+                                                         userInfo:nil];
         }
-        CFReadStreamRef readStream;
-        CFWriteStreamRef writeStream;
-        
-        CFStreamCreatePairWithSocketToHost(NULL, (CFStringRef)@"localhost", (UInt32)port, &readStream, &writeStream);
-        if(!CFWriteStreamOpen(writeStream)) {
-            @throw [[[MADNotOpetWriteStreamException alloc] initWithName:@"MADNotOpetWriteStreamException"
-                                                                 reason:@"WriteStream not open."
-                                                               userInfo:nil] autorelease];
-        }
-        _inputStream = [(NSInputStream *)read retain];
-        _outputStream = [(NSOutputStream *)write retain];
-        _ipv4Socket = 0;
+        _ipv4Socket = nil;
         _port = port;
         _running = NO;
+        _connections = [NSMutableSet new];
     }
     
     return self;
 }
 
-- (void)dealloc {
-    [_inputStream release];
-    [_outputStream release];
-    [super dealloc];
-}
-
 - (void)start {
-    //    Старт должен создать сокет и слушать.
     [self openSocket];
     [self listen];
+    _running = YES;
 }
 
-//close socket
 - (void)stop {
     CFSocketInvalidate(_ipv4Socket);
     CFRelease(_ipv4Socket);
+    _running = NO;
     _ipv4Socket = nil;
 }
 
-- (void)openStream {
-    for (NSStream *stream in @[_inputStream, _outputStream]) {
-        [stream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-        [stream open];
-    }
+- (void)cancelConnection:(MADTCPConnection *)connection {
+    [connection closeStream];
+    [_connections removeObject:connection];
 }
 
-- (void)closeStream {
-    for (NSStream *stream in @[_inputStream, _outputStream]) {
-        [stream close];
-        [stream removeFromRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-        stream = nil;
-    }
-}
-
-//void collBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
-//    
-//}
-//
-
-
-
-//    opening a socket to listen for TCP connections
 - (void)openSocket {
-    //    створюємо сокет сервера як TCP IPv4
-    CFSocketContext socketContext = { 0, self, NULL, NULL, NULL };
-    _ipv4Socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, NULL, &socketContext);
+//    Create a Socket(TCP IPv4)
+    CFSocketContext socketContext = { 0, (__bridge void *)(self), NULL, NULL, NULL };
+    _ipv4Socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, &AcceptCallBack, &socketContext);
     
     if (!_ipv4Socket) {
-        @throw [[[MADSocketException alloc] initWithName:@"MADSocketException"
+        @throw [[MADSocketException alloc] initWithName:@"MADSocketException"
                                                   reason:@"Unable to create socket."
-                                                userInfo:nil] autorelease];
+                                                userInfo:nil];
     }
-    
-    //    встановлюємо порт і адресу, які збираємось слухати
+//    встановлюю порт і адресу, які збираюсь слухати
     struct sockaddr_in socketAddress;
     memset(&socketAddress, 0, sizeof(socketAddress));
-    
     socketAddress.sin_len = sizeof(socketAddress);
     socketAddress.sin_family = AF_INET;
     socketAddress.sin_port = htons(_port);
     socketAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     
     CFDataRef addressData = CFDataCreate(kCFAllocatorDefault, (UInt8 *)&socketAddress, sizeof(socketAddress));
-    
+
     if (CFSocketSetAddress(_ipv4Socket, addressData) != kCFSocketSuccess) {
-        @throw [[[MADSocketException alloc] initWithName:@"MADSocketException"
+        @throw [[MADSocketException alloc] initWithName:@"MADSocketException"
                                                   reason:@"Unable to bind socket to address."
-                                                userInfo:nil] autorelease];
+                                                userInfo:nil];
     }
     CFRelease(addressData);
 }
 
-//    Begin listening on a socket
 - (void)listen {
     CFRunLoopSourceRef socketSource = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _ipv4Socket, 0);
     
     CFRunLoopAddSource(CFRunLoopGetCurrent(), socketSource, kCFRunLoopCommonModes);
     CFRelease(socketSource);
-    NSLog(@"Socket listening on port %ld\n", (long)_port);
+}
+
+- (void) acceptConnection:(CFSocketNativeHandle)handle {
+    CFReadStreamRef read;
+    CFWriteStreamRef write;
+    
+    CFStreamCreatePairWithSocket(NULL, handle, &read, &write);
+    
+    if (read && write) {
+        CFReadStreamSetProperty(read, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
+        CFWriteStreamSetProperty(write, kCFStreamPropertyShouldCloseNativeSocket, kCFBooleanTrue);
+        
+        NSOutputStream *writeStream = (__bridge NSOutputStream *) write;
+        NSInputStream *readStream = (__bridge NSInputStream *) read;
+        MADTCPConnection *connection = [[MADTCPConnection alloc] initWithReadStream:readStream
+                                                                        writeStream:writeStream];
+        connection.server = self;
+        [connection openConnection];
+        [_connections addObject:connection];
+    } else {
+        close(handle);
+    }
+    
+    if (read) {
+        CFRelease(read);
+    }
+    if (write) {
+        CFRelease(write);
+    }
 }
 
 @end

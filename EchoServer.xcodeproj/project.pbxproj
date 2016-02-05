@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		841B7C5A1C60C147004A729F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 841B7C591C60C147004A729F /* main.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		841B7C621C60C593004A729F /* MADEchoServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 841B7C611C60C593004A729F /* MADEchoServer.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		841B7C621C60C593004A729F /* MADEchoServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 841B7C611C60C593004A729F /* MADEchoServer.m */; };
+		841B7C921C652B63004A729F /* MADTCPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 841B7C911C652B63004A729F /* MADTCPConnection.m */; };
+		841B7C931C654644004A729F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 841B7C591C60C147004A729F /* main.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,8 @@
 		841B7C591C60C147004A729F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		841B7C601C60C593004A729F /* MADEchoServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MADEchoServer.h; sourceTree = "<group>"; };
 		841B7C611C60C593004A729F /* MADEchoServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MADEchoServer.m; sourceTree = "<group>"; };
+		841B7C901C652B63004A729F /* MADTCPConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MADTCPConnection.h; sourceTree = "<group>"; };
+		841B7C911C652B63004A729F /* MADTCPConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MADTCPConnection.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +66,8 @@
 				841B7C591C60C147004A729F /* main.m */,
 				841B7C601C60C593004A729F /* MADEchoServer.h */,
 				841B7C611C60C593004A729F /* MADEchoServer.m */,
+				841B7C901C652B63004A729F /* MADTCPConnection.h */,
+				841B7C911C652B63004A729F /* MADTCPConnection.m */,
 			);
 			path = EchoServer;
 			sourceTree = "<group>";
@@ -124,7 +129,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				841B7C621C60C593004A729F /* MADEchoServer.m in Sources */,
-				841B7C5A1C60C147004A729F /* main.m in Sources */,
+				841B7C931C654644004A729F /* main.m in Sources */,
+				841B7C921C652B63004A729F /* MADTCPConnection.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,6 +249,7 @@
 				841B7C5F1C60C147004A729F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

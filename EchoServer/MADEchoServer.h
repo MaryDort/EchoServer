@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+@class MADTCPConnection;
 
 @interface MADEchoServer : NSObject
 
@@ -17,6 +18,8 @@
 
 - (void)start;
 - (void)stop;
+
+- (void)cancelConnection:(MADTCPConnection *)connection;
 
 @end
 
