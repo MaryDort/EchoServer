@@ -11,9 +11,9 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <sys/socket.h>
 #import <netinet/in.h>
-#define DEFAULT_PORT 8080
+#define DEFAULT_PORT 80
 #define MAX_PORT 65535
-#define MIN_PORT 1023
+#define MIN_PORT 0
 
 @interface MADEchoServer ()
 
@@ -38,6 +38,11 @@ void AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef add
     self = [super init];
     
     if (self) {
+        if (DEFAULT_PORT > MAX_PORT || DEFAULT_PORT < MIN_PORT) {
+            @throw [[MADInvalidPortException alloc] initWithName:@"MADInvalidPortException"
+                                                          reason:@"65535 <= port value >= 0"
+                                                        userInfo:nil];
+        }
         _ipv4Socket = nil;
         _port = DEFAULT_PORT;
         _running = NO;
@@ -52,7 +57,7 @@ void AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef add
     if (self) {
         if (port > MAX_PORT || port < MIN_PORT) {
             @throw [[MADInvalidPortException alloc] initWithName:@"MADInvalidPortException"
-                                                           reason:@"65535 < port value > 1023"
+                                                           reason:@"65535 <= port value >= 0"
                                                          userInfo:nil];
         }
         _ipv4Socket = nil;
@@ -83,7 +88,6 @@ void AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef add
 }
 
 - (void)openSocket {
-//    Create a Socket(TCP IPv4)
     CFSocketContext socketContext = { 0, (__bridge void *)(self), NULL, NULL, NULL };
     _ipv4Socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, &AcceptCallBack, &socketContext);
     
@@ -92,7 +96,7 @@ void AcceptCallBack(CFSocketRef socket, CFSocketCallBackType type, CFDataRef add
                                                   reason:@"Unable to create socket."
                                                 userInfo:nil];
     }
-//    встановлюю порт і адресу, які збираюсь слухати
+    
     struct sockaddr_in socketAddress;
     memset(&socketAddress, 0, sizeof(socketAddress));
     socketAddress.sin_len = sizeof(socketAddress);
