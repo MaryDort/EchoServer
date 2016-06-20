@@ -1,2 +1,2 @@
 # EchoServer
-Simple EchoServer implemented. For education purposes
+Simple EchoServer. For education purposes
