@@ -8,6 +8,11 @@ When server start it begin listening specified TCP-port. After user connection s
 Сycle continues until the client disconnects or until receives comand "disconnect\n".
 Received the command "disconnect\n" server closes the client socket.
 
+# Development technologies:
+- NSStreamDelegate
+- <sys/socket.h>
+- <netinet/in.h>
+
 # Instructions:
 - run program
 - in terminal: $ telnet localhost "your port"
