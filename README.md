@@ -10,8 +10,8 @@ Received the command "disconnect\n" server closes the client socket.
 
 # Development technologies:
 - NSStreamDelegate
-- <sys/socket.h>
-- <netinet/in.h>
+- sys/socket.h
+- netinet/in.h
 
 # Instructions:
 - run program
