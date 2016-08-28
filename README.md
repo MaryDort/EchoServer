@@ -9,7 +9,7 @@ When server start it begin listening specified TCP-port. After user connection s
 Received the command "disconnect\n" server closes the client socket.
 
 # Development technologies:
-- NSStreamDelegate
+- NSStream
 - sys/socket.h
 - netinet/in.h
 
