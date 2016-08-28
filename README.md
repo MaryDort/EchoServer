@@ -10,6 +10,6 @@ Received the command "disconnect\n" server closes the client socket.
 
 # Instructions:
 - run program
-- on terminal: $ telnet localhost "your port"
+- in terminal: $ telnet localhost "your port"
 - Enter any message
 - Be happy 😺
